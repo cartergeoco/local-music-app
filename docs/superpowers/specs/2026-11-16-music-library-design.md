@@ -103,7 +103,7 @@ File tags are the source of truth. The database is a cache.
 
 ## Rail mechanics
 
-- Input: vertical mouse wheel maps to horizontal scroll; trackpad horizontal gestures scroll natively; Left/Right arrows and A/D step one card.
+- Input: vertical mouse wheel maps to horizontal scroll (one card per notch); trackpad gestures and click-drag free-scroll with rubber-banding at the ends; Left/Right arrows step one card, Page Up/Down step five, Home/End jump to the ends. Letter keys are reserved for type-to-filter, so A/D are not bound.
 - Physics: momentum on release, then a spring settles on the nearest card.
 - The card nearest the center is focused: scale 1.0, full opacity. Neighbors: scale 0.88, opacity 0.6.
 - Only the focused card shows its live background; others show a still frame.
@@ -122,9 +122,9 @@ File tags are the source of truth. The database is a cache.
 
 - One full-window WebGL2 canvas behind the rail.
 - Renders a flowing gradient from the focused artist's palette, blended with their background photo.
-- Switching focus crossfades palette uniforms and the photo texture over about 600ms.
+- Palettes blend continuously with scroll position: the two cards nearest the center each show their own palette, and the background between them mixes the two.
 - Renders at half resolution and upscales.
-- Frame rate capped to display refresh. Rendering stops when the window is minimized, hidden, or unfocused.
+- Full display refresh rate while the rail moves; 30 fps while the rail is still. Rendering stops when the window is minimized, hidden, or unfocused (it still redraws once when the rail moves, to keep the card mask aligned).
 - Target cost: 1–3% GPU on a modern discrete or integrated GPU.
 
 ## Performance budgets
