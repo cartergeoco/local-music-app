@@ -11,6 +11,15 @@
 
   let { store }: { store: ArtistStore } = $props();
   let canvas: HTMLCanvasElement;
+  let redraw: (() => void) | null = null;
+  let current: BackgroundRenderer | null = null;
+
+  $effect(() => {
+    const s = store;
+    if (!current) return;
+    current.setStore(s);
+    redraw?.();
+  });
 
   onMount(() => {
     let renderer: BackgroundRenderer;
@@ -20,6 +29,7 @@
       console.error(err);
       return;
     }
+    current = renderer;
 
     const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
     const shouldAnimate = () =>
@@ -71,6 +81,10 @@
       handle.wake();
     };
 
+    redraw = () => {
+      lastVersion = -1;
+      handle.wake();
+    };
     onResize();
     window.addEventListener('resize', onResize);
     window.addEventListener('focus', onStateChange);
@@ -88,6 +102,8 @@
       reducedMotion.removeEventListener('change', onStateChange);
       canvas.removeEventListener('webglcontextlost', onContextLost);
       canvas.removeEventListener('webglcontextrestored', onContextRestored);
+      redraw = null;
+      current = null;
       handle.remove();
       renderer.destroy();
     };

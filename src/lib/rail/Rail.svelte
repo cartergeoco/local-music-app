@@ -8,11 +8,13 @@
     store: ArtistStore;
     view: Uint32Array;
     onFocus: (index: number) => void;
+    /** The focused card was clicked. */
+    onActivate: (index: number) => void;
   }
 
-  let { store, view, onFocus }: Props = $props();
+  let { store, view, onFocus, onActivate }: Props = $props();
   let el: HTMLDivElement;
-  let controller: RailController | null = null;
+  let controller = $state.raw<RailController | null>(null);
 
   export function stepBy(cards: number): void {
     controller?.stepBy(cards);
@@ -27,13 +29,17 @@
   }
 
   onMount(() => {
-    const c = new RailController(el, store, (i) => onFocus(i));
-    controller = c;
-    c.setView(view);
+    const c = new RailController(
+      el,
+      store,
+      (i) => onFocus(i),
+      (i) => onActivate(i),
+    );
     const observer = new ResizeObserver(() => {
       c.setLayout(computeLayout(el.getBoundingClientRect(), window.innerHeight));
     });
     observer.observe(el);
+    controller = c;
     return () => {
       observer.disconnect();
       c.destroy();
@@ -42,8 +48,7 @@
   });
 
   $effect(() => {
-    const v = view;
-    controller?.setView(v);
+    controller?.setData(store, view);
   });
 </script>
 

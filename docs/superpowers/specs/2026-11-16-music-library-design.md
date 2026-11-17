@@ -168,3 +168,15 @@ Rules that make these budgets reachable:
 - No library, tags, or networking yet.
 
 Later milestones, in order: library scan and index; tag editor; managed organizer and journal; artwork fetching; playback; command palette; brand identity and visual design.
+
+## Second milestone: real library (done)
+
+Built against the first real collection (118 MP3s, 7 artists, 11 releases). Imports copy into the library root, then the index, covers, and MusicBrainz matches fill in. Where this differs from the sections above:
+
+- Tags: MP3s are read and written with the `id3` crate, because `lofty` rejects whole files over one malformed frame (common in downloaded music) and would drop frames on rewrite. `lofty` still reads audio properties and every other format. A tag that only partly parses is never rewritten; the copy keeps its original tags and the index uses the repaired values.
+- Import repairs tags on the copies: missing album artist, missing title, disc numbers encoded in file names, and albums where every track shares one number. Duplicate detection is by source file hash only for now.
+- Library root defaults to the Windows Music folder plus `Local Music`, stored in `settings.json`; the first-run picker comes later. On machines where the Music folder is redirected to OneDrive the default lands inside OneDrive, so the picker should warn about that.
+- Artist imagery: headshots come from the Wikidata image (P18) via Wikimedia Commons, which needs no API key. Fanart.tv logos and backgrounds stay optional for a later milestone. Images are cached under the app data folder, not in artist folders, and are JPEG (the `image` crate only encodes lossless WebP).
+- Matching: artist search covers names and aliases (renamed artists such as Kanye West, now "Ye"). A candidate is verified when MusicBrainz credits it on a recording with one of the local track titles; otherwise only a single exact-name match is accepted, flagged unverified.
+- Cards: the newest release's cover is the still frame. On the focused card it stays at 45% opacity over the live background instead of fading out completely.
+- Not yet built from this milestone's scope: file watcher, Issues view, journal, and in-app settings.

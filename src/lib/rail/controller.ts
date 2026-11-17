@@ -55,8 +55,9 @@ export class RailController {
 
   constructor(
     private readonly el: HTMLElement,
-    store: ArtistStore,
+    private store: ArtistStore,
     private readonly onFocus: (index: number) => void,
+    private readonly onActivate: (index: number) => void,
   ) {
     this.pool = new CardPool(el, store);
     this.tick = ticker.add(this.step, TICK_ORDER.rail);
@@ -81,12 +82,30 @@ export class RailController {
     this.renderNow();
   }
 
-  /** Replaces the visible list, keeping the focused artist in place when it survives. */
-  setView(view: Uint32Array): void {
-    const prevArtist = this.focused >= 0 ? this.view[this.focused] : -1;
+  /**
+   * Replaces the data and visible list, keeping the focused artist in place
+   * when it survives. A refresh that leaves the focused card where it was
+   * (new artwork, an artist added further along) doesn't interrupt motion.
+   */
+  setData(store: ArtistStore, view: Uint32Array): void {
+    const prevId = this.focused >= 0 ? this.store.artists[this.view[this.focused]]?.id : undefined;
+    const prevLength = this.view.length;
+    const prevFocused = this.focused;
+    if (store !== this.store) {
+      this.store = store;
+      this.pool.setStore(store);
+    }
+    const pos = prevId === undefined ? -1 : store.positionOf(prevId);
+    let index = pos >= 0 ? view.indexOf(pos) : -1;
+
     this.view = view;
     railState.view = view;
-    let index = prevArtist >= 0 ? view.indexOf(prevArtist) : -1;
+    if (index >= 0 && index === prevFocused && view.length === prevLength) {
+      this.pool.invalidate();
+      if (this.layout) this.pool.render(this.spring.x, view, this.layout);
+      railState.version++;
+      return;
+    }
     if (index < 0) index = 0;
     this.cancelGestures();
     this.spring.x = this.target = view.length ? index : 0;
@@ -246,7 +265,9 @@ export class RailController {
     if (this.el.hasPointerCapture(e.pointerId)) this.el.releasePointerCapture(e.pointerId);
 
     if (!d.moved) {
-      if (d.pressedIndex >= 0) this.goTo(d.pressedIndex);
+      if (d.pressedIndex < 0) return;
+      if (d.pressedIndex === Math.round(this.target)) this.onActivate(d.pressedIndex);
+      else this.goTo(d.pressedIndex);
       return;
     }
     const velocity = e.timeStamp - d.lastT > RELEASE_STALE_MS ? 0 : d.velocity;

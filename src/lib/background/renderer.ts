@@ -64,7 +64,7 @@ export class BackgroundRenderer {
 
   constructor(
     private readonly canvas: HTMLCanvasElement,
-    private readonly store: ArtistStore,
+    private store: ArtistStore,
   ) {
     const gl = canvas.getContext('webgl2', {
       alpha: false,
@@ -82,6 +82,10 @@ export class BackgroundRenderer {
 
   get ready(): boolean {
     return this.res !== null;
+  }
+
+  setStore(store: ArtistStore): void {
+    this.store = store;
   }
 
   /** Call after the context is restored. */

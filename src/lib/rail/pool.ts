@@ -7,6 +7,9 @@ import { cardOpacity, cardScale, focusAmount, visibleRange, type RailLayout } fr
  * nodes; it only rewrites transforms, and content when a slot changes hands.
  */
 
+/** How much of the cover stays visible over the live background on the focused card. */
+const FOCUSED_COVER_OPACITY = 0.45;
+
 interface Slot {
   el: HTMLDivElement;
   still: HTMLDivElement;
@@ -14,6 +17,8 @@ interface Slot {
   name: HTMLDivElement;
   index: number;
   artist: number;
+  /** Lowest still-layer opacity, reached at full focus. */
+  stillFloor: number;
   visible: boolean;
   frame: number;
   x: number;
@@ -35,11 +40,16 @@ export class CardPool {
 
   constructor(
     private readonly container: HTMLElement,
-    private readonly store: ArtistStore,
+    private store: ArtistStore,
   ) {}
 
   get size(): number {
     return this.slots.length;
+  }
+
+  setStore(store: ArtistStore): void {
+    this.store = store;
+    this.invalidate();
   }
 
   resize(size: number): void {
@@ -88,7 +98,7 @@ export class CardPool {
         slot.opacity = opacity;
         slot.el.style.opacity = String(opacity);
       }
-      const stillOpacity = 1 - f;
+      const stillOpacity = 1 - f * (1 - slot.stillFloor);
       if (stillOpacity !== slot.stillOpacity) {
         slot.stillOpacity = stillOpacity;
         slot.still.style.opacity = String(stillOpacity);
@@ -127,6 +137,7 @@ export class CardPool {
       name,
       index: -1,
       artist: -1,
+      stillFloor: 0,
       visible: false,
       frame: 0,
       x: NaN,
@@ -141,8 +152,17 @@ export class CardPool {
     const s = this.store;
     slot.artist = artist;
     slot.name.textContent = a.name;
-    slot.badge.textContent = a.monogram;
-    slot.still.style.background = `linear-gradient(160deg, ${s.color(artist, 3)} 0%, ${s.color(artist, 1)} 55%, ${s.color(artist, 0)} 100%)`;
-    slot.badge.style.background = `linear-gradient(135deg, ${s.color(artist, 4)}, ${s.color(artist, 2)})`;
+
+    const gradient = `linear-gradient(160deg, ${s.color(artist, 3)} 0%, ${s.color(artist, 1)} 55%, ${s.color(artist, 0)} 100%)`;
+    const cover = s.coverUrls[artist];
+    slot.still.style.background = cover ? `url("${cover}") center / cover no-repeat, ${gradient}` : gradient;
+    slot.stillFloor = cover ? FOCUSED_COVER_OPACITY : 0;
+    slot.stillOpacity = NaN;
+
+    const headshot = s.headshotUrls[artist];
+    slot.badge.textContent = headshot ? '' : a.monogram;
+    slot.badge.style.background = headshot
+      ? `url("${headshot}") center / cover no-repeat, ${s.color(artist, 1)}`
+      : `linear-gradient(135deg, ${s.color(artist, 4)}, ${s.color(artist, 2)})`;
   }
 }

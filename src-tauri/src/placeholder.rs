@@ -2,6 +2,8 @@
 
 use serde::Serialize;
 
+use crate::names::monogram;
+
 pub const DEFAULT_COUNT: u32 = 500;
 pub const MAX_COUNT: u32 = 20_000;
 
@@ -86,19 +88,6 @@ fn artist_name(rng: &mut Rng) -> String {
     }
 }
 
-pub fn monogram(name: &str) -> String {
-    let words: Vec<&str> = name
-        .split_whitespace()
-        .filter(|w| !w.eq_ignore_ascii_case("the"))
-        .collect();
-    let initials: String = match words.as_slice() {
-        [] => String::new(),
-        [only] => only.chars().take(2).collect(),
-        [first, .., last] => first.chars().take(1).chain(last.chars().take(1)).collect(),
-    };
-    initials.to_uppercase()
-}
-
 fn palette(rng: &mut Rng) -> [u8; 15] {
     let base = rng.unit() * 360.0;
     let spread = 20.0 + rng.unit() * 140.0;
@@ -165,14 +154,6 @@ mod tests {
             assert!(!a.name.trim().is_empty());
             assert!(!a.monogram.is_empty() && a.monogram.chars().count() <= 2);
         }
-    }
-
-    #[test]
-    fn monogram_rules() {
-        assert_eq!(monogram("The Echos"), "EC");
-        assert_eq!(monogram("Neon Society"), "NS");
-        assert_eq!(monogram("Kalo Vemi Ra"), "KR");
-        assert_eq!(monogram("SOL"), "SO");
     }
 
     #[test]
